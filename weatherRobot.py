@@ -7,6 +7,7 @@ Info: 定期向企业微信推送天气预报消息
 import requests, json
 import datetime
 import time
+import sys
 
 
 class Weather:
@@ -111,7 +112,7 @@ class SendMsg:
         """艾特全部，并发送指定信息"""
         data = json.dumps({"msgtype": "text", "text": {"content": content, "mentioned_list":["@all"]}})
         r = requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
-        print(r.json)
+        # print(r.json)
 
 
     def send_markdown(self, content, env):
@@ -127,24 +128,28 @@ class SendMsg:
         print(r.json)
 
 
-    def every_time_send_msg(self, interval_h=0, interval_m=0, interval_s=0, special_h="00", special_m="00", mode="special", env="test"):
+    def every_time_send_msg(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
         """每天指定时间发送指定消息"""
 
         # 设置自动执行间隔时间
         second = self.sleep_time(interval_h, interval_m, interval_s)
         print("执行每天{}时{}分定时发送...".format(special_h, special_m))
 
+        # print("写入命令：")
+
         strat = 0
+        key = True
 
         # 死循环
-        while True:
+        while key:
             # 获取当前时间和当前时分秒
             c_now, c_h, c_m, c_s = self.get_current_time()
             # print("当前时间：", c_now, c_h, c_m, c_s)
 
             if mode == "special":
                 # print("执行每天{}时{}分定时发送...".format(special_h, special_m))
-                if c_h == special_h and c_m == special_m: # 早上
+
+                if c_h == special_h and c_m == special_m and c_s == "00": # 早上
                     # 执行
                     print("正在发送...")
                     msg = Weather().get_weather("now") #获取当前的实时天气
@@ -162,14 +167,27 @@ class SendMsg:
 
                 elif strat == 0:
                     print("机器人开始运行\n将会发送信息至URL：{}".format(env))
+
                     msg = "欢迎使用蟒蛇机器人"
-                    self.send_msg(msg, "test")
+                    if env != "test":
+                        self.send_msg(msg, "test")
+                    self.send_msg(msg, env)
+
+                    self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
                     strat+=1
 
                 elif c_m == "00" and c_s == "00": # 检测程序是否还在运行
                     msg = "当前时间：{}，程序还在正常运行...".format(c_now)
                     print(msg)
                     self.send_msg(msg, "test")
+
+                # comm = sys.stdin.readline()
+                # if "exit" in comm:
+                #     key = False
+                #     msg = "程序已结束！！！"
+                #     print(msg)
+                #     self.send_msg(msg, "test")
+
             else:
                 print("等待")
                 # send_msg(msg)
@@ -183,7 +201,11 @@ class SendMsg:
 
 if __name__ == '__main__':
 
-    SendMsg().every_time_send_msg(special_h="07", special_m="30", mode="special", env="test")
+
+    if len(sys.argv) == 4:
+        SendMsg().every_time_send_msg(special_h=str(sys.argv[2]), special_m=str(sys.argv[3]), mode="special", env=sys.argv[1])
+    else:
+        print({"error": 1, "msg": "python weatherRobot.py env special_h special_m"})
 
     # print(get_weather())
     # msg = get_weather("now")
