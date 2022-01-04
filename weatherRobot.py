@@ -111,8 +111,11 @@ class SendMsg:
 
         """艾特全部，并发送指定信息"""
         data = json.dumps({"msgtype": "text", "text": {"content": content, "mentioned_list":["@all"]}})
-        r = requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
-        # print(r.json)
+        try:
+            requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
+        except Exception as error:
+            time.sleep(50)
+            requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
 
 
     def send_markdown(self, content, env):
@@ -138,10 +141,9 @@ class SendMsg:
         # print("写入命令：")
 
         strat = 0
-        key = True
 
         # 死循环
-        while key:
+        while True:
             # 获取当前时间和当前时分秒
             c_now, c_h, c_m, c_s = self.get_current_time()
             # print("当前时间：", c_now, c_h, c_m, c_s)
@@ -181,16 +183,9 @@ class SendMsg:
                     print(msg)
                     self.send_msg(msg, "test")
 
-                # comm = sys.stdin.readline()
-                # if "exit" in comm:
-                #     key = False
-                #     msg = "程序已结束！！！"
-                #     print(msg)
-                #     self.send_msg(msg, "test")
 
             else:
                 print("等待")
-                # send_msg(msg)
                 
             # print("每隔" + str(interval_h) + "小时" + str(interval_m) + "分" + str(interval_s) + "秒执行一次")
             # print("**"*50)
