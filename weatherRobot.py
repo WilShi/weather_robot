@@ -155,12 +155,12 @@ class SendMsg:
                     # 执行
                     print("正在发送...")
                     msg = Weather().get_weather("now") #获取当前的实时天气
-                    self.send_msg(msg, env)
+                    self.send_msg("早上好！！！！ \n"+msg, env)
 
                 elif c_h == "18" and c_m == "00" and c_s == "00": # 晚上下班
                     print("正在发送晚间预报...")
                     msg = Weather().get_weather("ahead") #获取明天天气
-                    self.send_msg("早上好！！！！ \n"+msg, env)
+                    self.send_msg(msg, env)
 
                 elif c_h == "11" and c_m == "55" and c_s == "00": # 中午吃饭
                     print("正在发送午饭提醒...")
@@ -173,7 +173,7 @@ class SendMsg:
                     msg = "欢迎使用蟒蛇机器人"
                     if env != "test":
                         self.send_msg(msg, "test")
-                    self.send_msg(msg, env)
+                    # self.send_msg(msg, env)
 
                     self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
                     strat+=1
