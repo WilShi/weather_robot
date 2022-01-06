@@ -4,6 +4,7 @@ Author: Wenbo Shi
 Create type_time: 2021-12-27
 Info: 定期向企业微信推送天气预报消息
 """
+import execjs
 import requests, json
 import datetime
 import time
@@ -114,6 +115,7 @@ class SendMsg:
         try:
             requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
         except Exception as error:
+            print("出现问题：{}，系统将等待50秒！！！！")
             time.sleep(50)
             requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
 
@@ -154,33 +156,73 @@ class SendMsg:
                 if c_h == special_h and c_m == special_m and c_s == "00": # 早上
                     # 执行
                     print("正在发送...")
-                    msg = Weather().get_weather("now") #获取当前的实时天气
+                    try:
+                        msg = Weather().get_weather("now") #获取当前的实时天气
+                    except Exception as error:
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+                        time.sleep(50)
+                        msg = Weather().get_weather("now")
                     self.send_msg("早上好！！！！ \n"+msg, env)
 
                 elif c_h == "18" and c_m == "00" and c_s == "00": # 晚上下班
                     print("正在发送晚间预报...")
-                    msg = Weather().get_weather("ahead") #获取明天天气
+                    self.send_msg("下班啦！！！！", env)
+                    try:
+                        msg = Weather().get_weather("ahead") #获取明天天气
+                    except Exception as error:
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+                        time.sleep(50)
+                        msg = Weather().get_weather("ahead")
                     self.send_msg(msg, env)
 
                 elif c_h == "11" and c_m == "55" and c_s == "00": # 中午吃饭
                     print("正在发送午饭提醒...")
-                    msg = Weather().get_weather("now") #获取当前的实时天气
+                    try:
+                        msg = Weather().get_weather("now") #获取当前的实时天气
+                    except Exception as error:
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+                        time.sleep(50)
+                        msg = Weather().get_weather("now")
                     self.send_msg("到点吃饭啦 ١١(❛ᴗ❛) \n" + msg, env)
+
+                elif c_h == "13" and c_m == "00" and c_s == "00": # 上班了
+                    print("正在发送上班提醒...")
+                    self.send_msg("开始上班啦！！！！", env)
 
                 elif strat == 0:
                     print("机器人开始运行\n将会发送信息至URL：{}".format(env))
 
-                    msg = "欢迎使用蟒蛇机器人"
+                    msg = "蟒蛇机器人已启动......"
                     if env != "test":
+                        self.send_msg(msg, "test")
+                        try:
+                            msg = Weather().get_weather("now") #获取当前的实时天气
+                        except Exception as error:
+                            self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                            time.sleep(50)
+                            msg = Weather().get_weather("now")
                         self.send_msg(msg, "test")
                     # self.send_msg(msg, env)
 
                     self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
                     strat+=1
 
-                elif c_m == "00" and c_s == "00": # 检测程序是否还在运行
+                if c_m == "00" and c_s == "00": # 检测程序是否还在运行
+
                     msg = "当前时间：{}，程序还在正常运行...".format(c_now)
                     print(msg)
+                    self.send_msg(msg, "test")
+
+                    try:
+                        msg = Weather().get_weather("now") #获取当前的实时天气
+                    except Exception as error:
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                        time.sleep(50)
+                        msg = Weather().get_weather("now")
+
                     self.send_msg(msg, "test")
 
 
@@ -193,12 +235,21 @@ class SendMsg:
             # 延时
             time.sleep(second)
 
+    
+    def start(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
+        try:
+            self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
+        except Exception as error:
+            self.send_msg("程序出现 {} 故障！！！！".format(str(error)), "test")
+            time.sleep(50)
+            self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
+
 
 if __name__ == '__main__':
 
 
     if len(sys.argv) == 4:
-        SendMsg().every_time_send_msg(special_h=str(sys.argv[2]), special_m=str(sys.argv[3]), mode="special", env=sys.argv[1])
+        SendMsg().start(special_h=str(sys.argv[2]), special_m=str(sys.argv[3]), mode="special", env=sys.argv[1])
     else:
         print({"error": 1, "msg": "python weatherRobot.py env special_h special_m"})
 
