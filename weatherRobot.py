@@ -240,13 +240,14 @@ class SendMsg:
                     if env != "test":
                         self.send_msg(msg, "test")
                         try:
-                            msg = Weather().get_weather("now") #获取当前的实时天气
+                            msgw = Weather().get_weather("now") #获取当前的实时天气
                         except Exception as error:
                             self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
                             time.sleep(50)
-                            msg = Weather().get_weather("now")
-                        self.send_msg(msg, "test")
-                    # self.send_msg(msg, env)
+                            msgw = Weather().get_weather("now")
+                        self.send_msg(msgw, "test")
+                    self.send_msg(msg, env)
+                    self.send_msg(msgw, env)
 
                     self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
                     strat+=1
@@ -266,7 +267,7 @@ class SendMsg:
 
                     self.send_msg(msg, "test")
 
-                if int(c_h) % 2 == 0 and c_m == "00" and c_s == "00":
+                if int(c_h) % 2 == 1 and c_m == "00" and c_s == "00":
                     return os.getpid()
 
             else:
