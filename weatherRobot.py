@@ -291,15 +291,6 @@ class SendMsg:
             time.sleep(50)
             self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
 
-    
-    def start(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
-        try:
-            self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
-        except Exception as error:
-            self.send_msg("程序出现 {} 故障！！！！".format(str(error)), "test")
-            time.sleep(50)
-            self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
-
 
 if __name__ == '__main__':
 
