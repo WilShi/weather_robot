@@ -9,6 +9,7 @@ import requests, json
 import datetime
 import time
 import sys
+import psutil, os
 
 
 class Weather:
@@ -37,7 +38,7 @@ class Weather:
         # 播报明天的天气
         if when == "ahead":
             qweatherApi = "https://devapi.qweather.com/v7/weather/3d?"
-            info = requests.get(qweatherApi, data)
+            info = requests.get(qweatherApi, data, timeout=5)
             # print(info.text)
             if info.status_code == 200:
                 jsonDoc = json.loads(info.text)
@@ -67,7 +68,7 @@ class Weather:
         # 播报今天的天气
         else:
             qweatherApi = "https://devapi.qweather.com/v7/weather/now?"
-            info = requests.get(qweatherApi, data)
+            info = requests.get(qweatherApi, data, timeout=5)
             
             if info.status_code == 200:
                 jsonDoc = json.loads(info.text)
@@ -132,8 +133,48 @@ class SendMsg:
         r = requests.post(wx_url, data, auth=('Content-Type', 'application/json'))
         print(r.json)
 
+    
+    def eqm_status(self, c_m, c_s, env):
+        cpu_count = psutil.cpu_count()
+        phy_cpu_count = psutil.cpu_count(logical=False)
 
-    def every_time_send_msg(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
+        virtual_memory = psutil.virtual_memory()
+        total_memory = str(round(float(virtual_memory.total)/1024/1024/1024, 2)) + "G"
+        memory_percent = str(virtual_memory.percent) + "%"
+        available_memory = str(round(float(virtual_memory.available)/1024/1024/1024, 2)) + "G"
+        used_memory = str(round(float(virtual_memory.used)/1024/1024/1024, 2)) + "G"
+
+        before_net_sent = psutil.net_io_counters().bytes_sent
+        before_net_recv = psutil.net_io_counters().bytes_recv
+
+        time.sleep(1)
+
+        now_net_sent = psutil.net_io_counters().bytes_sent
+        now_net_recv = psutil.net_io_counters().bytes_recv
+
+        net_sent = round((now_net_sent - before_net_sent) / 1024, 2)
+        net_recv = round((now_net_recv - before_net_recv) /1024, 2)
+
+        pid = os.getpid()
+        process = psutil.Process(pid)
+        process_name = process.name()
+        process_status = process.status()
+        process_vms = str(round(process.memory_info().vms /1024/1024, 2)) + "M"
+        
+        t = str(time.strftime("\n [%Y-%m-%d %H:%M:%S] \n\n", time.localtime()))
+        msg = t + "==当前设备状态==\nCPU逻辑核心：{} 个\nCPU物理核心：{} 个\n设备总内存：{}\n已使用内存占比：{}\n可使用内存：{}\n已使用内存：{}\n\n==当前网络状态==\n网络上传速率：{}KB/s\n网络下载速率：{}KB/s\n\n==当前程序状态==\n程序进程：{}\n进程名称：{}\n进程状态：{}\n进程占用的内存：{}"\
+            .format(cpu_count, phy_cpu_count, total_memory, memory_percent, available_memory, used_memory, net_sent, net_recv, pid, process_name, process_status, process_vms)
+
+        print("\n\n")
+        print("#"*50)
+        print(msg)
+        print("#"*50)
+
+        if (c_m[-1] == "0" and c_s == "00") or env == "test":
+            self.send_msg(msg, "test")
+
+
+    def every_time_send_msg(self, interval_h=0, interval_m=0, interval_s=0, special_h="00", special_m="00", mode="special", env="test"):
         """每天指定时间发送指定消息"""
 
         # 设置自动执行间隔时间
@@ -217,7 +258,7 @@ class SendMsg:
                     self.send_msg(msg, "test")
 
                     try:
-                        msg = Weather().get_weather("now") #获取当前的实时天气
+                        msg = Weather().get_weather("now") # 获取当前的实时天气
                     except Exception as error:
                         self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
                         time.sleep(50)
@@ -225,6 +266,8 @@ class SendMsg:
 
                     self.send_msg(msg, "test")
 
+                if int(c_h) % 2 == 0 and c_m == "00" and c_s == "00":
+                    return os.getpid()
 
             else:
                 print("等待")
@@ -233,7 +276,19 @@ class SendMsg:
             # print("**"*50)
             # print("**"*50)
             # 延时
-            time.sleep(second)
+            # time.sleep(1)
+
+            self.eqm_status(c_m, c_s, env)
+
+    
+    def start(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
+        try:
+            self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
+        except Exception as error:
+            print("程序出现 {} 故障！！！！".format(str(error)))
+            self.send_msg("程序出现 {} 故障！！！！".format(str(error)), "test")
+            time.sleep(50)
+            self.every_time_send_msg(interval_h, interval_m, interval_s, special_h, special_m, mode, env)
 
     
     def start(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
@@ -247,9 +302,17 @@ class SendMsg:
 
 if __name__ == '__main__':
 
+    if len(sys.argv) >= 4:
+        pid = SendMsg().start(special_h=str(sys.argv[2]), special_m=str(sys.argv[3]), mode="special", env=sys.argv[1])
+       
+        # 重启程序
 
-    if len(sys.argv) == 4:
-        SendMsg().start(special_h=str(sys.argv[2]), special_m=str(sys.argv[3]), mode="special", env=sys.argv[1])
+        time.sleep(10)
+        msg = "程序为减少内存压力将在10秒后重启！！！！"
+        print(msg)
+        SendMsg().send_msg(msg, "test")
+        SendMsg().send_msg(msg, "real")
+        os.execl(sys.executable, sys.executable, *sys.argv)
     else:
         print({"error": 1, "msg": "python weatherRobot.py env special_h special_m"})
 
