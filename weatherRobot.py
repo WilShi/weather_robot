@@ -4,7 +4,6 @@ Author: Wenbo Shi
 Create type_time: 2021-12-27
 Info: 定期向企业微信推送天气预报消息
 """
-import execjs
 import requests, json
 import datetime
 import time
@@ -170,7 +169,7 @@ class SendMsg:
         print(msg)
         print("#"*50)
 
-        if (c_m[-1] == "0" and c_s == "00") or env == "test":
+        if (c_m[-1] == "0" and c_s == "00") or (env == "test" and c_s[-1] == "0"):
             self.send_msg(msg, "test")
 
 
@@ -237,15 +236,17 @@ class SendMsg:
                     print("机器人开始运行\n将会发送信息至URL：{}".format(env))
 
                     msg = "蟒蛇机器人已启动......"
+                    try:
+                        msgw = Weather().get_weather("now") #获取当前的实时天气
+                    except Exception as error:
+                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                        time.sleep(50)
+                        msgw = Weather().get_weather("now")
+
                     if env != "test":
                         self.send_msg(msg, "test")
-                        try:
-                            msgw = Weather().get_weather("now") #获取当前的实时天气
-                        except Exception as error:
-                            self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
-                            time.sleep(50)
-                            msgw = Weather().get_weather("now")
                         self.send_msg(msgw, "test")
+                        
                     self.send_msg(msg, env)
                     self.send_msg(msgw, env)
 
