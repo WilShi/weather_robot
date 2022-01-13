@@ -169,7 +169,7 @@ class SendMsg:
         print(msg)
         print("#"*50)
 
-        if (c_m[-1] == "0" and c_s == "00") or (env == "test" and c_s[-1] == "0"):
+        if (c_m == "00" and c_s == "00") or (env == "test" and c_s[-1] == "0"):
             self.send_msg(msg, "test")
 
 
@@ -247,8 +247,8 @@ class SendMsg:
                         self.send_msg(msg, "test")
                         self.send_msg(msgw, "test")
                         
-                    self.send_msg(msg, env)
-                    self.send_msg(msgw, env)
+                    # self.send_msg(msg, env)
+                    # self.send_msg(msgw, env)
 
                     self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
                     strat+=1
