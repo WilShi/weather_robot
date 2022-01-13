@@ -56,7 +56,7 @@ class Weather:
                     windSpeedDay = tomorrow.get("windSpeedDay") # 风力
                     precip = self.check_rain(tomorrow.get("precip")) # 降雨量
 
-                    msg = "到点下班啦！！！！！！ \n当前时间：{}，\n明天的日期是：{} \n明天的天气：{} \n日出时间是：{} \n月相名称：{} \n最高温度：{} \n最低温度：{} \n风力：{} \n降雨量：{} \n如需查看具体天气信息可使用：{}".format(c_now, fxDate, textDay, sunrise, moonPhase, tempMax, tempMin, windSpeedDay, precip, wealink)
+                    msg = "当前时间：{}，\n明天的日期是：{} \n明天的天气：{} \n日出时间是：{} \n月相名称：{} \n最高温度：{} \n最低温度：{} \n风力：{} \n降雨量：{} \n如需查看具体天气信息可使用：{}".format(c_now, fxDate, textDay, sunrise, moonPhase, tempMax, tempMin, windSpeedDay, precip, wealink)
                     # print(msg)
                     return msg
 
@@ -215,7 +215,7 @@ class SendMsg:
                         self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
                         time.sleep(50)
                         msg = Weather().get_weather("ahead")
-                    self.send_msg(msg, env)
+                    self.send_msg("到点下班啦！！！！！！ \n" + msg, env)
 
                 elif c_h == "11" and c_m == "55" and c_s == "00": # 中午吃饭
                     print("正在发送午饭提醒...")
@@ -304,7 +304,6 @@ if __name__ == '__main__':
         msg = "程序为减少内存压力将在10秒后重启！！！！"
         print(msg)
         SendMsg().send_msg(msg, "test")
-        SendMsg().send_msg(msg, "real")
         os.execl(sys.executable, sys.executable, *sys.argv)
     else:
         print({"error": 1, "msg": "python weatherRobot.py env special_h special_m"})
