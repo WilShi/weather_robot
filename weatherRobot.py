@@ -11,6 +11,90 @@ import sys
 import psutil, os
 
 
+class RainbowFart:
+
+    def __init__(self) -> None:
+        self.key = 'ac18d7a473825f23a4075332f42a9c7c'
+        self.api = 'http://api.tianapi.com/{}/index'
+
+    def get_jieqi(self, date):
+        data = {
+            'key': self.key,
+            'date': date
+        }
+        api = self.api.format('lunar')
+        try:
+            info = requests.get(api, data, timeout=5)
+        except Exception as error:
+            time.sleep(1)
+            info = requests.get(api, data, timeout=5)
+        if info.status_code == 200:
+            info = json.loads(info.text)
+            lunar_data = info.get("newslist", "获取失败!")[0]
+            lunar_festival = lunar_data.get("lunar_festival", "获取失败!")
+            festival = lunar_data.get("festival", "获取失败!")
+            fitness = lunar_data.get("fitness", "获取失败!")
+            taboo = lunar_data.get("taboo", "获取失败!")
+            lmonthname = lunar_data.get("lmonthname", "获取失败!")
+            return lunar_festival, festival, fitness, taboo, lmonthname
+        else:
+            return False
+
+
+    def get_zaoan(self):
+        data = {'key': self.key}
+        api = self.api.format('zaoan')
+
+        try:
+            info = requests.get(api, data, timeout=5)
+        except Exception as error:
+            time.sleep(1)
+            info = requests.get(api, data, timeout=5)
+        if info.status_code == 200:
+            info = json.loads(info.text)
+            morning_data = info.get("newslist", "获取失败!")[0]
+            content = morning_data.get('content', "获取失败!")
+            return content
+        else:
+            return False
+
+
+    def get_night(self):
+        data = {'key': self.key}
+        api = self.api.format('wanan')
+
+        try:
+            info = requests.get(api, data, timeout=5)
+        except Exception as error:
+            time.sleep(1)
+            info = requests.get(api, data, timeout=5)
+        if info.status_code == 200:
+            info = json.loads(info.text)
+            morning_data = info.get("newslist", "获取失败!")[0]
+            content = morning_data.get('content', "获取失败!")
+            return content
+        else:
+            return False
+
+
+    def get_hotreview(self):
+        data = {'key': self.key}
+        api = self.api.format('hotreview')
+
+        try:
+            info = requests.get(api, data, timeout=5)
+        except Exception as error:
+            time.sleep(1)
+            info = requests.get(api, data, timeout=5)
+        if info.status_code == 200:
+            info = json.loads(info.text)
+            morning_data = info.get("newslist", "获取失败!")[0]
+            content = morning_data.get('content', "获取失败!")
+            return content
+        else:
+            return False
+
+
 class Weather:
     def check_rain(self, precip):
         if float(precip) == 0:
@@ -32,7 +116,7 @@ class Weather:
             "unit": "",
             "gzip": ""
         }
-        c_now, c_h, c_m, c_s = SendMsg().get_current_time()
+        c_now, c_h, c_m, c_s, date = SendMsg().get_current_time()
 
         # 播报明天的天气
         if when == "ahead":
@@ -56,7 +140,8 @@ class Weather:
                     windSpeedDay = tomorrow.get("windSpeedDay") # 风力
                     precip = self.check_rain(tomorrow.get("precip")) # 降雨量
 
-                    msg = "到点下班啦！！！！！！ \n当前时间：{}，\n明天的日期是：{} \n明天的天气：{} \n日出时间是：{} \n月相名称：{} \n最高温度：{} \n最低温度：{} \n风力：{} \n降雨量：{} \n如需查看具体天气信息可使用：{}".format(c_now, fxDate, textDay, sunrise, moonPhase, tempMax, tempMin, windSpeedDay, precip, wealink)
+                    msg = "当前时间：{}，\n明天的日期是：{} \n明天的天气：{} \n日出时间是：{} \n月相名称：{} \n最高温度：{} \n最低温度：{} \n风力：{} \n降雨量：{} \n如需查看具体天气信息可使用：{}"\
+                        .format(c_now, fxDate, textDay, sunrise, moonPhase, tempMax, tempMin, windSpeedDay, precip, wealink)
                     # print(msg)
                     return msg
 
@@ -95,7 +180,8 @@ class SendMsg:
         hour = datetime.datetime.now().strftime("%H")
         mm = datetime.datetime.now().strftime("%M")
         ss = datetime.datetime.now().strftime("%S")
-        return now_time, hour, mm, ss
+        date = datetime.datetime.now().strftime('%Y-%m-%d')
+        return now_time, hour, mm, ss, date
 
 
     def sleep_time(self, hour, m, sec):
@@ -169,8 +255,23 @@ class SendMsg:
         print(msg)
         print("#"*50)
 
-        if (c_m[-1] == "0" and c_s == "00") or (env == "test" and c_s[-1] == "0"):
-            self.send_msg(msg, "test")
+        return msg
+
+        # if (c_m == "00" and c_s == "00") or (env == "test" and c_s[-1] == "0"): # 向监控机器人发生设备状态
+        #     self.send_msg(msg, "test")
+
+
+    def set_msg(self, wdate, env, spmsg, RFart=''):
+        try:
+            msg = Weather().get_weather(wdate) #获取当前的实时天气
+        except Exception as error:
+            self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+            self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+            time.sleep(50)
+            msg = Weather().get_weather("now")
+        self.send_msg(spmsg+'\n'+msg, env)
+        if RFart:
+            self.send_msg(RFart, env)
 
 
     def every_time_send_msg(self, interval_h=0, interval_m=0, interval_s=0, special_h="00", special_m="00", mode="special", env="test"):
@@ -180,14 +281,14 @@ class SendMsg:
         second = self.sleep_time(interval_h, interval_m, interval_s)
         print("执行每天{}时{}分定时发送...".format(special_h, special_m))
 
-        # print("写入命令：")
+        fart = RainbowFart()
 
         strat = 0
 
         # 死循环
         while True:
             # 获取当前时间和当前时分秒
-            c_now, c_h, c_m, c_s = self.get_current_time()
+            c_now, c_h, c_m, c_s, date = self.get_current_time()
             # print("当前时间：", c_now, c_h, c_m, c_s)
 
             if mode == "special":
@@ -196,41 +297,68 @@ class SendMsg:
                 if c_h == special_h and c_m == special_m and c_s == "00": # 早上
                     # 执行
                     print("正在发送...")
-                    try:
-                        msg = Weather().get_weather("now") #获取当前的实时天气
-                    except Exception as error:
-                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
-                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
-                        time.sleep(50)
-                        msg = Weather().get_weather("now")
-                    self.send_msg("早上好！！！！ \n"+msg, env)
+                    # try:
+                    #     msg = Weather().get_weather("now") #获取当前的实时天气
+                    # except Exception as error:
+                    #     self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                    #     self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+                    #     time.sleep(50)
+                    #     msg = Weather().get_weather("now")
+                    # self.send_msg("早上好！！！！ \n"+msg, env)
+                    # self.send_msg(fart.get_zaoan(), env)
+                    lunar_festival, festival, fitness, taboo, lmonthname = fart.get_jieqi(date)
+
+                    msg = '现在的季节：{}\n'.format(lmonthname)
+                    if lunar_festival:
+                        msg += "今天是农历节日：{}\n".format(lunar_festival)
+                    if festival:
+                        msg += "今天是公历节日：{}\n".format(festival)
+
+                    msg += '今天适宜：{}\n'.format(fitness)
+                    msg += '今天不宜：{}\n'.format(taboo)
+                    
+                    self.set_msg('now', env, "早上好！！！！", fart.get_zaoan())
+                    self.send_msg(msg, env)
+
 
                 elif c_h == "18" and c_m == "00" and c_s == "00": # 晚上下班
                     print("正在发送晚间预报...")
                     self.send_msg("下班啦！！！！", env)
-                    try:
-                        msg = Weather().get_weather("ahead") #获取明天天气
-                    except Exception as error:
-                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
-                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
-                        time.sleep(50)
-                        msg = Weather().get_weather("ahead")
-                    self.send_msg(msg, env)
+                    # try:
+                    #     msg = Weather().get_weather("ahead") #获取明天天气
+                    # except Exception as error:
+                    #     self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                    #     self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+                    #     time.sleep(50)
+                    #     msg = Weather().get_weather("ahead")
+                    # self.send_msg("到点下班啦！！！！！！ \n" + msg, env)
+                    self.set_msg('ahead', env, "到点下班啦！！！！")
+
 
                 elif c_h == "11" and c_m == "55" and c_s == "00": # 中午吃饭
                     print("正在发送午饭提醒...")
-                    try:
-                        msg = Weather().get_weather("now") #获取当前的实时天气
-                    except Exception as error:
-                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
-                        self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
-                        time.sleep(50)
-                        msg = Weather().get_weather("now")
-                    self.send_msg("到点吃饭啦 ١١(❛ᴗ❛) \n" + msg, env)
+                    # try:
+                    #     msg = Weather().get_weather("now") #获取当前的实时天气
+                    # except Exception as error:
+                    #     self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", "test")
+                    #     self.send_msg("获取天气失败，将等待50秒后重新请求天气！！！！", env)
+                    #     time.sleep(50)
+                    #     msg = Weather().get_weather("now")
+                    # self.send_msg("到点吃饭啦 ١١(❛ᴗ❛) \n" + msg, env)
+                    self.set_msg('now', env, "到点吃饭啦 ١١(❛ᴗ❛)")
+
 
                 elif c_h == "13" and c_m == "00" and c_s == "00": # 上班了
                     print("正在发送上班提醒...")
                     self.send_msg("开始上班啦！！！！", env)
+                    self.send_msg(fart.get_hotreview(), env)
+
+
+                elif c_h == "22" and c_m == "00" and c_s == "00": # 晚安提醒
+                    print("正在发送晚安提醒...")
+                    self.send_msg("早点休息啦！！！！", env)
+                    self.send_msg(fart.get_night(), env)
+
 
                 elif strat == 0:
                     print("机器人开始运行\n将会发送信息至URL：{}".format(env))
@@ -247,17 +375,20 @@ class SendMsg:
                         self.send_msg(msg, "test")
                         self.send_msg(msgw, "test")
                         
-                    self.send_msg(msg, env)
-                    self.send_msg(msgw, env)
+                    # self.send_msg(msg, env)
+                    # self.send_msg(msgw, env)
 
                     self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
                     strat+=1
 
-                if c_m == "00" and c_s == "00": # 检测程序是否还在运行
+
+                eqs = self.eqm_status(c_m, c_s, env)
+                if c_h[-1] == '6' and c_m == "00" and c_s == "00": # 检测程序是否还在运行
 
                     msg = "当前时间：{}，程序还在正常运行...".format(c_now)
                     print(msg)
                     self.send_msg(msg, "test")
+                    self.send_msg(eqs, "test")
 
                     try:
                         msg = Weather().get_weather("now") # 获取当前的实时天气
@@ -273,14 +404,13 @@ class SendMsg:
 
             else:
                 print("等待")
+                self.eqm_status(c_m, c_s, env)
                 
             # print("每隔" + str(interval_h) + "小时" + str(interval_m) + "分" + str(interval_s) + "秒执行一次")
             # print("**"*50)
             # print("**"*50)
             # 延时
             # time.sleep(1)
-
-            self.eqm_status(c_m, c_s, env)
 
     
     def start(self, interval_h=0, interval_m=0, interval_s=1, special_h="00", special_m="00", mode="special", env="test"):
@@ -295,6 +425,17 @@ class SendMsg:
 
 if __name__ == '__main__':
 
+    if sys.argv[1] == 'test' and len(sys.argv) == 2:
+        date = SendMsg().get_current_time()[-1]
+        fart = RainbowFart()
+        
+        # print(fart.get_jieqi(date))
+        print(fart.get_zaoan())
+        print(fart.get_night())
+        print(fart.get_hotreview())
+        SendMsg().send_msg(fart.get_zaoan(), 'test')
+
+
     if len(sys.argv) >= 4:
         pid = SendMsg().start(special_h=str(sys.argv[2]), special_m=str(sys.argv[3]), mode="special", env=sys.argv[1])
        
@@ -304,7 +445,6 @@ if __name__ == '__main__':
         msg = "程序为减少内存压力将在10秒后重启！！！！"
         print(msg)
         SendMsg().send_msg(msg, "test")
-        SendMsg().send_msg(msg, "real")
         os.execl(sys.executable, sys.executable, *sys.argv)
     else:
         print({"error": 1, "msg": "python weatherRobot.py env special_h special_m"})
