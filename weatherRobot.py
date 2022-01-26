@@ -36,7 +36,17 @@ class RainbowFart:
             fitness = lunar_data.get("fitness", "获取失败!")
             taboo = lunar_data.get("taboo", "获取失败!")
             lmonthname = lunar_data.get("lmonthname", "获取失败!")
-            return lunar_festival, festival, fitness, taboo, lmonthname
+
+
+            msg = '现在的季节：{}\n'.format(lmonthname)
+            if lunar_festival:
+                msg += "今天是农历节日：{}\n".format(lunar_festival)
+            if festival:
+                msg += "今天是公历节日：{}\n".format(festival)
+
+            msg += '今天适宜：{}\n'.format(fitness)
+            msg += '今天不宜：{}\n'.format(taboo)
+            return msg
         else:
             return False
 
@@ -52,7 +62,7 @@ class RainbowFart:
             info = requests.get(api, data, timeout=5)
         if info.status_code == 200:
             info = json.loads(info.text)
-            morning_data = info.get("newslist", "获取失败!")[0]
+            morning_data = info.get("newslist")[0]
             content = morning_data.get('content', "获取失败!")
             return content
         else:
@@ -70,7 +80,7 @@ class RainbowFart:
             info = requests.get(api, data, timeout=5)
         if info.status_code == 200:
             info = json.loads(info.text)
-            morning_data = info.get("newslist", "获取失败!")[0]
+            morning_data = info.get("newslist")[0]
             content = morning_data.get('content', "获取失败!")
             return content
         else:
@@ -88,9 +98,11 @@ class RainbowFart:
             info = requests.get(api, data, timeout=5)
         if info.status_code == 200:
             info = json.loads(info.text)
-            morning_data = info.get("newslist", "获取失败!")[0]
+            morning_data = info.get("newslist")[0]
             content = morning_data.get('content', "获取失败!")
-            return content
+            source = morning_data.get('source', "获取失败!")
+            msg = "{} ---- {}".format(content, source)
+            return msg
         else:
             return False
 
@@ -283,7 +295,7 @@ class SendMsg:
 
         fart = RainbowFart()
 
-        strat = 0
+        strat = False
 
         # 死循环
         while True:
@@ -306,17 +318,7 @@ class SendMsg:
                     #     msg = Weather().get_weather("now")
                     # self.send_msg("早上好！！！！ \n"+msg, env)
                     # self.send_msg(fart.get_zaoan(), env)
-                    lunar_festival, festival, fitness, taboo, lmonthname = fart.get_jieqi(date)
-
-                    msg = '现在的季节：{}\n'.format(lmonthname)
-                    if lunar_festival:
-                        msg += "今天是农历节日：{}\n".format(lunar_festival)
-                    if festival:
-                        msg += "今天是公历节日：{}\n".format(festival)
-
-                    msg += '今天适宜：{}\n'.format(fitness)
-                    msg += '今天不宜：{}\n'.format(taboo)
-                    
+                    msg = fart.get_jieqi(date)
                     self.set_msg('now', env, "早上好！！！！", fart.get_zaoan())
                     self.send_msg(msg, env)
 
@@ -360,7 +362,7 @@ class SendMsg:
                     self.send_msg(fart.get_night(), env)
 
 
-                elif strat == 0:
+                elif strat == False:
                     print("机器人开始运行\n将会发送信息至URL：{}".format(env))
 
                     msg = "蟒蛇机器人已启动......"
@@ -378,8 +380,11 @@ class SendMsg:
                     # self.send_msg(msg, env)
                     # self.send_msg(msgw, env)
 
+                    # self.send_msg(fart.get_zaoan(), "test")
+                    # self.send_msg(fart.get_hotreview(), "test")
+                    # self.send_msg(fart.get_night(), "test")
                     self.send_msg("执行每天{}时{}分定时发送...".format(special_h, special_m), "test")
-                    strat+=1
+                    strat = True
 
 
                 eqs = self.eqm_status(c_m, c_s, env)
@@ -433,7 +438,7 @@ if __name__ == '__main__':
         print(fart.get_zaoan())
         print(fart.get_night())
         print(fart.get_hotreview())
-        SendMsg().send_msg(fart.get_zaoan(), 'test')
+        SendMsg().send_msg(fart.get_hotreview(), 'test')
 
 
     if len(sys.argv) >= 4:
